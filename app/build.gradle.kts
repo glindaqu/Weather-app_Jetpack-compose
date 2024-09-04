@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "ru.glindaquint.weatherapp"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -68,4 +68,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation(libs.converter.gson)
+    implementation(libs.retrofit)
 }
