@@ -1,13 +1,15 @@
 package ru.glindaquint.weatherapp.screens
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,7 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
@@ -23,7 +25,7 @@ import ru.glindaquint.weatherapp.R
 import ru.glindaquint.weatherapp.types.openWeatherMap.OWMApiAnswer
 import ru.glindaquint.weatherapp.viewModels.implementation.WeatherViewModel
 
-@SuppressLint("MissingPermission")
+@SuppressLint("MissingPermission", "CommitPrefEdits")
 @Suppress("ktlint:standard:function-naming")
 @Composable
 fun Home() {
@@ -35,24 +37,59 @@ fun Home() {
 
     val context = LocalContext.current
 
+    val sharedPreferences =
+        LocalContext.current.getSharedPreferences(
+            LocalContext.current.packageName,
+            Context.MODE_PRIVATE,
+        )
+    val shouldShowLocalePermission =
+        sharedPreferences.getBoolean("SHOULD_SHOW_LOCALE_PERMISSION", true)
+
     val coroutineScope = rememberCoroutineScope()
 
-    val fusedLocationClient =
-        LocationServices
-            .getFusedLocationProviderClient(LocalContext.current)
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(LocalContext.current)
 
-    if (!checkLocationPermissions(LocalContext.current)) {
-        ActivityCompat.requestPermissions(
-            context as ComponentActivity,
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            101,
-        )
-    }
+    val launcherForActivityResult =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
+            sharedPreferences.edit().putBoolean("SHOULD_SHOW_LOCALE_PERMISSION", false).apply()
+            if (isGranted) {
+                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                    coroutineScope.launch {
+                        cityData = weatherViewModel.getWeatherByLocation(location, apiKey)
+                    }
+                }
+            } else {
+                coroutineScope.launch {
+                    cityData =
+                        weatherViewModel.getWeatherByCity(WeatherViewModel.DEFAULT_CITY, apiKey)
+                }
+            }
+        }
 
-    fusedLocationClient.lastLocation.addOnSuccessListener {
-        if (it != null) {
-            coroutineScope.launch {
-                cityData = weatherViewModel.getWeatherByLocation(it, apiKey)
+    LaunchedEffect(Unit) {
+        when (
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+            )
+        ) {
+            PackageManager.PERMISSION_GRANTED -> {
+                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                    coroutineScope.launch {
+                        cityData = weatherViewModel.getWeatherByLocation(location, apiKey)
+                    }
+                }
+            }
+
+            else -> {
+                if (shouldShowLocalePermission) {
+                    launcherForActivityResult.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                } else {
+                    coroutineScope.launch {
+                        cityData =
+                            weatherViewModel.getWeatherByCity(WeatherViewModel.DEFAULT_CITY, apiKey)
+                    }
+                }
             }
         }
     }
@@ -62,18 +99,6 @@ fun Home() {
         else -> City(cityData!!)
     }
 }
-
-private fun checkLocationPermissions(context: Context): Boolean =
-    !(
-        ActivityCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-        ) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-            ) != PackageManager.PERMISSION_GRANTED
-    )
 
 @Suppress("ktlint:standard:function-naming")
 @Composable

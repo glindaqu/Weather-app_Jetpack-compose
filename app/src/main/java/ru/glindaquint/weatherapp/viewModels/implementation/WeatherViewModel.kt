@@ -35,4 +35,8 @@ class WeatherViewModel(
             lon = location.longitude,
             apiKey = apiKey,
         )
+
+    companion object {
+        const val DEFAULT_CITY = "St. Petersburg"
+    }
 }
