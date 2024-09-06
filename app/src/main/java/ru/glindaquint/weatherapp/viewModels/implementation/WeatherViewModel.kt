@@ -1,6 +1,7 @@
 package ru.glindaquint.weatherapp.viewModels.implementation
 
 import android.app.Application
+import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -15,15 +16,23 @@ class WeatherViewModel(
     private val retrofit =
         Retrofit
             .Builder()
-            .baseUrl("https://api.openweathermap.org/data/2.5/")
+            .baseUrl("https://ru.api.openweathermap.org/data/2.5/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    private val service = retrofit.create(OpenWeatherMapService::class.java)
 
     override suspend fun getWeatherByCity(
         cityName: String,
         apiKey: String,
-    ): OWMApiAnswer {
-        val service = retrofit.create(OpenWeatherMapService::class.java)
-        return service.getWeatherByCity(cityName, apiKey)
-    }
+    ): OWMApiAnswer = service.getWeatherByCity(cityName, apiKey)
+
+    override suspend fun getWeatherByLocation(
+        location: Location,
+        apiKey: String,
+    ): OWMApiAnswer =
+        service.getWeatherByLocation(
+            lat = location.latitude,
+            lon = location.longitude,
+            apiKey = apiKey,
+        )
 }

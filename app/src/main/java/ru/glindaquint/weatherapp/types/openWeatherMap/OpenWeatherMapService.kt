@@ -8,5 +8,14 @@ interface OpenWeatherMapService {
     suspend fun getWeatherByCity(
         @Query("q") cityName: String,
         @Query("appid") apiKey: String,
+        @Query("lang") language: String = "ru",
+    ): OWMApiAnswer
+
+    @GET("weather")
+    suspend fun getWeatherByLocation(
+        @Query("lat") lat: Double,
+        @Query("lon") lon: Double,
+        @Query("appid") apiKey: String,
+        @Query("lang") lang: String = "ru",
     ): OWMApiAnswer
 }
