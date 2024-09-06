@@ -9,7 +9,7 @@ interface OpenWeatherMapService {
         @Query("q") cityName: String,
         @Query("appid") apiKey: String,
         @Query("lang") language: String = "ru",
-        @Query("units") unitsType: String = "metrics",
+        @Query("units") unitsType: String = "metric",
     ): OWMApiAnswer
 
     @GET("weather")
@@ -18,6 +18,6 @@ interface OpenWeatherMapService {
         @Query("lon") lon: Double,
         @Query("appid") apiKey: String,
         @Query("lang") lang: String = "ru",
-        @Query("units") unitsType: String = "metrics",
+        @Query("units") unitsType: String = "metric",
     ): OWMApiAnswer
 }
