@@ -1,4 +1,4 @@
-package ru.glindaquint.weatherapp.screens
+package ru.glindaquint.weatherapp.screens.home
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -6,13 +6,13 @@ import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,12 +28,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
 import ru.glindaquint.weatherapp.R
+import ru.glindaquint.weatherapp.screens.cityPick.CityPick
+import ru.glindaquint.weatherapp.screens.cityPick.rememberCityPickState
 import ru.glindaquint.weatherapp.types.openWeatherMap.OWMApiAnswer
 import ru.glindaquint.weatherapp.ui.theme.Typography
 import ru.glindaquint.weatherapp.viewModels.implementation.WeatherViewModel
@@ -45,12 +46,9 @@ import kotlin.math.roundToInt
 fun Home() {
     val weatherViewModel =
         ViewModelProvider(LocalContext.current as ComponentActivity)[WeatherViewModel::class.java]
-
     var cityData by remember { mutableStateOf<OWMApiAnswer?>(null) }
     val apiKey = stringResource(R.string.open_weather_key)
-
     val context = LocalContext.current
-
     val sharedPreferences =
         LocalContext.current.getSharedPreferences(
             LocalContext.current.packageName,
@@ -58,11 +56,8 @@ fun Home() {
         )
     val shouldShowLocalePermission =
         sharedPreferences.getBoolean("SHOULD_SHOW_LOCALE_PERMISSION", true)
-
     val coroutineScope = rememberCoroutineScope()
-
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(LocalContext.current)
-
     val launcherForActivityResult =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
             sharedPreferences.edit().putBoolean("SHOULD_SHOW_LOCALE_PERMISSION", false).apply()
@@ -90,7 +85,9 @@ fun Home() {
             PackageManager.PERMISSION_GRANTED -> {
                 fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                     coroutineScope.launch {
-                        cityData = weatherViewModel.getWeatherByLocation(location, apiKey)
+                        if (location != null) {
+                            cityData = weatherViewModel.getWeatherByLocation(location, apiKey)
+                        }
                     }
                 }
             }
@@ -110,7 +107,12 @@ fun Home() {
 
     when (cityData) {
         null -> Error()
-        else -> City(cityData!!)
+        else ->
+            City(data = cityData!!, onCityChange = { city, country, _ ->
+                coroutineScope.launch {
+                    cityData = weatherViewModel.getWeatherByCity(cityName = "$city,$country", apiKey = apiKey)
+                }
+            })
     }
 }
 
@@ -122,13 +124,23 @@ private fun Error() {
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-private fun City(data: OWMApiAnswer) {
+private fun City(
+    data: OWMApiAnswer,
+    onCityChange: (String, String, String) -> Unit,
+) {
+    val cityPickState = rememberCityPickState()
+
+    CityPick(state = cityPickState, onCityPick = onCityChange)
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        Box(modifier = Modifier.weight(0.5f), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxWidth().weight(0.5f).clickable { cityPickState.show = true },
+            contentAlignment = Alignment.Center,
+        ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = data.name ?: "Неизвестно",
@@ -137,13 +149,9 @@ private fun City(data: OWMApiAnswer) {
                 )
                 Row(horizontalArrangement = Arrangement.Center) {
                     Text(
-                        text = data.weather[0].description?.capitalize(Locale.current) ?: "",
-                        style = Typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = "${data.main?.temp?.roundToInt()}°C",
+                        text =
+                            "${data.weather[0].description?.capitalize(Locale.current)} " +
+                                "${data.main?.temp?.roundToInt()}°C",
                         style = Typography.bodyLarge,
                         textAlign = TextAlign.Center,
                     )

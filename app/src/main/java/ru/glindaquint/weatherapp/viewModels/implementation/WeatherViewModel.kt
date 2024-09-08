@@ -16,7 +16,7 @@ class WeatherViewModel(
     private val retrofit =
         Retrofit
             .Builder()
-            .baseUrl("https://ru.api.openweathermap.org/data/2.5/")
+            .baseUrl("https://ru.api.openweathermap.org/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     private val service = retrofit.create(OpenWeatherMapService::class.java)

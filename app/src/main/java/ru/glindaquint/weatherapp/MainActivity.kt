@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import ru.glindaquint.weatherapp.screens.Home
+import ru.glindaquint.weatherapp.screens.home.Home
 import ru.glindaquint.weatherapp.ui.theme.WeatherAppTheme
 
 class MainActivity : ComponentActivity() {

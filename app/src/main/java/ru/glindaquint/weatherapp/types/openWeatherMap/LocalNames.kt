@@ -1,0 +1,37 @@
+package ru.glindaquint.weatherapp.types.openWeatherMap
+
+import com.google.gson.annotations.SerializedName
+
+data class LocalNames(
+    @SerializedName("fi") var fi: String? = null,
+    @SerializedName("kk") var kk: String? = null,
+    @SerializedName("oc") var oc: String? = null,
+    @SerializedName("lt") var lt: String? = null,
+    @SerializedName("hi") var hi: String? = null,
+    @SerializedName("he") var he: String? = null,
+    @SerializedName("pl") var pl: String? = null,
+    @SerializedName("be") var be: String? = null,
+    @SerializedName("ru") var ru: String? = null,
+    @SerializedName("et") var et: String? = null,
+    @SerializedName("ku") var ku: String? = null,
+    @SerializedName("en") var en: String? = null,
+    @SerializedName("uk") var uk: String? = null,
+    @SerializedName("ja") var ja: String? = null,
+    @SerializedName("fr") var fr: String? = null,
+    @SerializedName("da") var da: String? = null,
+    @SerializedName("lv") var lv: String? = null,
+    @SerializedName("az") var az: String? = null,
+    @SerializedName("sl") var sl: String? = null,
+    @SerializedName("uz") var uz: String? = null,
+    @SerializedName("de") var de: String? = null,
+    @SerializedName("ca") var ca: String? = null,
+    @SerializedName("ko") var ko: String? = null,
+    @SerializedName("ar") var ar: String? = null,
+    @SerializedName("kn") var kn: String? = null,
+    @SerializedName("cs") var cs: String? = null,
+    @SerializedName("hr") var hr: String? = null,
+    @SerializedName("pt") var pt: String? = null,
+    @SerializedName("ro") var ro: String? = null,
+    @SerializedName("es") var es: String? = null,
+    @SerializedName("sk") var sk: String? = null,
+)
