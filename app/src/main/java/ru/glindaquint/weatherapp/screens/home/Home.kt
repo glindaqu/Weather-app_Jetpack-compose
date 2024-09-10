@@ -6,14 +6,22 @@ import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,7 +48,8 @@ import ru.glindaquint.weatherapp.ui.theme.Typography
 import ru.glindaquint.weatherapp.viewModels.implementation.WeatherViewModel
 import kotlin.math.roundToInt
 
-@SuppressLint("MissingPermission", "CommitPrefEdits")
+@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("MissingPermission", "CommitPrefEdits", "UnusedMaterial3ScaffoldPaddingParameter")
 @Suppress("ktlint:standard:function-naming")
 @Composable
 fun Home() {
@@ -104,41 +113,73 @@ fun Home() {
             }
         }
     }
+    val cityPickState = rememberCityPickState()
 
-    when (cityData) {
-        null -> Error()
-        else ->
-            City(data = cityData!!, onCityChange = { city, country, _ ->
-                coroutineScope.launch {
-                    cityData = weatherViewModel.getWeatherByCity(cityName = "$city,$country", apiKey = apiKey)
-                }
-            })
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Погода",
+                        style = Typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.onBackground),
+                actions = {
+                    IconButton(onClick = { cityPickState.show = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
+                },
+            )
+        },
+    ) {
+        when (cityData) {
+            null -> Error()
+            else -> {
+                CityPick(state = cityPickState, onCityPick = { city, country, _ ->
+                    coroutineScope.launch {
+                        try {
+                            cityData =
+                                weatherViewModel.getWeatherByCity(
+                                    cityName = "$city,$country",
+                                    apiKey = apiKey,
+                                )
+                        } catch (_: Exception) {
+                            cityData = null
+                        }
+                    }
+                })
+                City(data = cityData!!)
+            }
+        }
     }
 }
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun Error() {
-    Text(text = "Error occurred when attempting to connect to the server")
+    Text(
+        text = "Error occurred when attempting to connect to the server",
+        modifier = Modifier.fillMaxSize(),
+        textAlign = TextAlign.Center,
+    )
 }
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-private fun City(
-    data: OWMApiAnswer,
-    onCityChange: (String, String, String) -> Unit,
-) {
-    val cityPickState = rememberCityPickState()
-
-    CityPick(state = cityPickState, onCityPick = onCityChange)
-
+private fun City(data: OWMApiAnswer) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth().weight(0.5f).clickable { cityPickState.show = true },
+            modifier = Modifier.fillMaxWidth().weight(0.5f),
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
