@@ -1,16 +1,11 @@
 package ru.glindaquint.weatherapp.viewModels.api
 
 import android.location.Location
-import ru.glindaquint.weatherapp.types.openWeatherMap.OWMApiAnswer
+import androidx.lifecycle.MutableLiveData
+import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMApiAnswer
 
 interface IWeatherViewModel {
-    suspend fun getWeatherByCity(
-        cityName: String,
-        apiKey: String,
-    ): OWMApiAnswer
+    fun getWeatherByCity(cityName: String): MutableLiveData<OWMApiAnswer?>
 
-    suspend fun getWeatherByLocation(
-        location: Location,
-        apiKey: String,
-    ): OWMApiAnswer
+    fun getWeatherByLocation(location: Location): MutableLiveData<OWMApiAnswer?>
 }

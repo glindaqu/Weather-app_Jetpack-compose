@@ -1,6 +1,7 @@
-package ru.glindaquint.weatherapp.types.openWeatherMap
+package ru.glindaquint.weatherapp.services.openWeatherMap.api
 
 import com.google.gson.annotations.SerializedName
+import ru.glindaquint.weatherapp.services.openWeatherMap.types.LocalNames
 
 data class OWMGeoApiAnswer(
     @SerializedName("name") var name: String? = null,

@@ -8,8 +8,8 @@ import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import ru.glindaquint.weatherapp.R
-import ru.glindaquint.weatherapp.types.openWeatherMap.OWMGeoApiAnswer
-import ru.glindaquint.weatherapp.types.openWeatherMap.OpenWeatherMapService
+import ru.glindaquint.weatherapp.services.openWeatherMap.OpenWeatherMapService
+import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMGeoApiAnswer
 import ru.glindaquint.weatherapp.viewModels.api.ICityPickViewModel
 
 class CityPickViewModel(

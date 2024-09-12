@@ -1,4 +1,4 @@
-package ru.glindaquint.weatherapp.types.openWeatherMap
+package ru.glindaquint.weatherapp.services.openWeatherMap.types
 
 import com.google.gson.annotations.SerializedName
 

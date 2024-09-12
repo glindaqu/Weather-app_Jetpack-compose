@@ -1,6 +1,6 @@
 package ru.glindaquint.weatherapp.viewModels.api
 
-import ru.glindaquint.weatherapp.types.openWeatherMap.OWMGeoApiAnswer
+import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMGeoApiAnswer
 
 interface ICityPickViewModel {
     suspend fun findCitiesByName(

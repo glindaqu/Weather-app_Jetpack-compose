@@ -1,6 +1,12 @@
-package ru.glindaquint.weatherapp.types.openWeatherMap
+package ru.glindaquint.weatherapp.services.openWeatherMap.api
 
 import com.google.gson.annotations.SerializedName
+import ru.glindaquint.weatherapp.services.openWeatherMap.types.Clouds
+import ru.glindaquint.weatherapp.services.openWeatherMap.types.Coord
+import ru.glindaquint.weatherapp.services.openWeatherMap.types.Main
+import ru.glindaquint.weatherapp.services.openWeatherMap.types.Sys
+import ru.glindaquint.weatherapp.services.openWeatherMap.types.Weather
+import ru.glindaquint.weatherapp.services.openWeatherMap.types.Wind
 
 data class OWMApiAnswer(
     @SerializedName("coord") var coord: Coord? = Coord(),
