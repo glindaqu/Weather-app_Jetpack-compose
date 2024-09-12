@@ -44,10 +44,15 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.delay
 import ru.glindaquint.weatherapp.DEBOUNCE_DELAY
 import ru.glindaquint.weatherapp.PADDING
+import ru.glindaquint.weatherapp.R
 import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMApiAnswer
 import ru.glindaquint.weatherapp.ui.components.WeatherScaffold
 import ru.glindaquint.weatherapp.ui.theme.Typography
@@ -225,7 +230,19 @@ private fun CitySearchField(onInput: (String) -> Unit) {
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun WeatherLoadingError() {
-    Text(text = "Something went wrong")
+    val animation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.error))
+    Column(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        LottieAnimation(
+            composition = animation,
+            modifier = Modifier.fillMaxSize(0.8f),
+            iterations = LottieConstants.IterateForever,
+        )
+        Text(text = "Что-то пошло не так...", style = Typography.titleMedium)
+    }
 }
 
 @Suppress("ktlint:standard:function-naming")
@@ -242,17 +259,36 @@ private fun WeatherDetail(
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun NoInternetError() {
-    Text(
-        text = "Error occurred when attempting to connect to the server",
-        modifier = Modifier.fillMaxSize(),
-        textAlign = TextAlign.Center,
-    )
+    val animation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.no_internet))
+    Column(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        LottieAnimation(
+            composition = animation,
+            modifier = Modifier.fillMaxSize(0.8f),
+            iterations = LottieConstants.IterateForever,
+        )
+        Text(text = "Нет подключения к интернету", style = Typography.titleMedium)
+    }
 }
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun Loading() {
-    Text(text = "Loading...")
+    val animation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading))
+    Column(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        LottieAnimation(
+            composition = animation,
+            modifier = Modifier.fillMaxSize(0.3f),
+            iterations = LottieConstants.IterateForever,
+        )
+    }
 }
 
 @Suppress("ktlint:standard:function-naming")

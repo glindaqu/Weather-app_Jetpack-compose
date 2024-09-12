@@ -68,6 +68,10 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // retrofit 2 related dependencies
     implementation(libs.converter.gson)
     implementation(libs.retrofit)
+
+    // lottie
+    implementation(libs.lottie.compose)
 }
