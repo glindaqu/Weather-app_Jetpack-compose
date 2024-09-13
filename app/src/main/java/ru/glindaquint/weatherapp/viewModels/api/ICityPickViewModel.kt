@@ -1,12 +1,13 @@
 package ru.glindaquint.weatherapp.viewModels.api
 
+import androidx.lifecycle.MutableLiveData
 import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMGeoApiAnswer
 
 interface ICityPickViewModel {
-    suspend fun findCitiesByName(
+    fun findCitiesByName(
         cityName: String,
         apiKey: String,
-    ): List<OWMGeoApiAnswer>
+    ): MutableLiveData<List<OWMGeoApiAnswer>?>
 
     fun refreshCities(name: String)
 }

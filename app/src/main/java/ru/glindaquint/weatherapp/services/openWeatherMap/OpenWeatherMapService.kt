@@ -25,10 +25,10 @@ interface OpenWeatherMapService {
     ): Call<OWMApiAnswer>
 
     @GET("geo/1.0/direct")
-    suspend fun getCitiesByName(
+    fun getCitiesByName(
         @Query("q") name: String,
         @Query("lang") lang: String = "ru",
         @Query("limit") limit: Int = 20,
         @Query("appid") apiKey: String,
-    ): List<OWMGeoApiAnswer>
+    ): Call<List<OWMGeoApiAnswer>>
 }

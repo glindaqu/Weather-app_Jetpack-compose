@@ -54,6 +54,7 @@ import ru.glindaquint.weatherapp.DEBOUNCE_DELAY
 import ru.glindaquint.weatherapp.PADDING
 import ru.glindaquint.weatherapp.R
 import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMApiAnswer
+import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMGeoApiAnswer
 import ru.glindaquint.weatherapp.ui.components.WeatherScaffold
 import ru.glindaquint.weatherapp.ui.theme.Typography
 import ru.glindaquint.weatherapp.viewModels.implementation.CityPickViewModel
@@ -119,7 +120,6 @@ fun Home() {
     }
 
     when (uiState) {
-        UIState.NoInternet -> NoInternetError()
         UIState.WeatherLoading -> Loading()
         UIState.WeatherLoaded ->
             WeatherDetail(
@@ -147,7 +147,16 @@ private fun SearchCity(
 ) {
     val cityPickViewModel =
         ViewModelProvider(LocalContext.current as ComponentActivity)[CityPickViewModel::class.java]
-    val cities by cityPickViewModel.cities.collectAsState(initial = null)
+    var cities by remember { mutableStateOf<List<OWMGeoApiAnswer>?>(null) }
+    val observer = Observer<List<OWMGeoApiAnswer>?> { cities = it }
+    cityPickViewModel.cities.observe(LocalLifecycleOwner.current, observer)
+
+    DisposableEffect(Unit) {
+        onDispose {
+            cityPickViewModel.cities.removeObserver(observer)
+        }
+    }
+
     WeatherScaffold(
         title = "Поиск города",
         icon = Icons.Default.Close,
@@ -251,26 +260,12 @@ private fun WeatherDetail(
     weather: OWMApiAnswer,
     onScaffoldIconClick: () -> Unit,
 ) {
-    WeatherScaffold(title = "Погода", onIconClick = onScaffoldIconClick, icon = Icons.Default.Search) {
-        City(weather)
-    }
-}
-
-@Suppress("ktlint:standard:function-naming")
-@Composable
-private fun NoInternetError() {
-    val animation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.no_internet))
-    Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+    WeatherScaffold(
+        title = "Погода",
+        onIconClick = onScaffoldIconClick,
+        icon = Icons.Default.Search,
     ) {
-        LottieAnimation(
-            composition = animation,
-            modifier = Modifier.fillMaxSize(0.8f),
-            iterations = LottieConstants.IterateForever,
-        )
-        Text(text = "Нет подключения к интернету", style = Typography.titleMedium)
+        City(weather)
     }
 }
 

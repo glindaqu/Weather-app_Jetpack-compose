@@ -5,5 +5,4 @@ enum class UIState {
     WeatherLoaded,
     WeatherLoadingError,
     SearchCity,
-    NoInternet,
 }
