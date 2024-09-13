@@ -2,9 +2,13 @@ package ru.glindaquint.weatherapp.screens.home
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.icu.text.SimpleDateFormat
+import android.icu.util.TimeZone
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,11 +16,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -44,6 +52,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import coil.compose.AsyncImage
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -54,6 +63,7 @@ import ru.glindaquint.weatherapp.DEBOUNCE_DELAY
 import ru.glindaquint.weatherapp.PADDING
 import ru.glindaquint.weatherapp.R
 import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMApiAnswer
+import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMForecastApiAnswer
 import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMGeoApiAnswer
 import ru.glindaquint.weatherapp.ui.components.WeatherScaffold
 import ru.glindaquint.weatherapp.ui.theme.Typography
@@ -61,20 +71,25 @@ import ru.glindaquint.weatherapp.viewModels.implementation.CityPickViewModel
 import ru.glindaquint.weatherapp.viewModels.implementation.WeatherViewModel
 import kotlin.math.roundToInt
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("MissingPermission", "CommitPrefEdits", "UnusedMaterial3ScaffoldPaddingParameter")
 @Suppress("ktlint:standard:function-naming")
 @Composable
 fun Home() {
     val weatherViewModel =
         ViewModelProvider(LocalContext.current as ComponentActivity)[WeatherViewModel::class.java]
-    var cityData by remember { mutableStateOf<OWMApiAnswer?>(null) }
-    val observer =
-        Observer<OWMApiAnswer?> { currentWeather ->
-            cityData = currentWeather
-        }
-    weatherViewModel.currentWeather.observe(LocalLifecycleOwner.current, observer)
+
+    var weather by remember { mutableStateOf<OWMApiAnswer?>(null) }
+    var forecast by remember { mutableStateOf<OWMForecastApiAnswer?>(null) }
+
+    val weatherObserver = Observer<OWMApiAnswer?> { weather = it }
+    val forecastObserver = Observer<OWMForecastApiAnswer?> { forecast = it }
+
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     val uiState by weatherViewModel.uiState.collectAsState()
+
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(LocalContext.current)
     val launcherForActivityResult =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -89,6 +104,8 @@ fun Home() {
         }
 
     LaunchedEffect(Unit) {
+        weatherViewModel.currentWeather.observe(lifecycleOwner, weatherObserver)
+        weatherViewModel.currentWeatherForecast.observe(lifecycleOwner, forecastObserver)
         when (
             ContextCompat.checkSelfPermission(
                 context,
@@ -115,7 +132,8 @@ fun Home() {
 
     DisposableEffect(Unit) {
         onDispose {
-            weatherViewModel.currentWeather.removeObserver(observer)
+            weatherViewModel.currentWeather.removeObserver(weatherObserver)
+            weatherViewModel.currentWeatherForecast.removeObserver(forecastObserver)
         }
     }
 
@@ -123,7 +141,8 @@ fun Home() {
         UIState.WeatherLoading -> Loading()
         UIState.WeatherLoaded ->
             WeatherDetail(
-                weather = cityData!!,
+                weather = weather!!,
+                forecast = forecast!!,
                 onScaffoldIconClick = { weatherViewModel.uiState.value = UIState.SearchCity },
             )
 
@@ -149,7 +168,11 @@ private fun SearchCity(
         ViewModelProvider(LocalContext.current as ComponentActivity)[CityPickViewModel::class.java]
     var cities by remember { mutableStateOf<List<OWMGeoApiAnswer>?>(null) }
     val observer = Observer<List<OWMGeoApiAnswer>?> { cities = it }
-    cityPickViewModel.cities.observe(LocalLifecycleOwner.current, observer)
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(Unit) {
+        cityPickViewModel.cities.observe(lifecycleOwner, observer)
+    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -175,7 +198,10 @@ private fun SearchCity(
             })
             Spacer(modifier = Modifier.weight(0.01f))
             LazyColumn(
-                modifier = Modifier.fillMaxSize().weight(0.9f),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .weight(0.9f),
                 verticalArrangement = Arrangement.spacedBy(0.5.dp),
             ) {
                 items(cities ?: listOf()) {
@@ -223,7 +249,10 @@ private fun CitySearchField(onInput: (String) -> Unit) {
     TextField(
         value = textFieldState,
         onValueChange = { textFieldState = it },
-        modifier = Modifier.fillMaxWidth().padding(PADDING),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(PADDING),
         trailingIcon = {
             Icon(imageVector = Icons.Default.Search, contentDescription = null)
         },
@@ -241,7 +270,10 @@ private fun CitySearchField(onInput: (String) -> Unit) {
 private fun WeatherLoadingError() {
     val animation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.error))
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -254,10 +286,12 @@ private fun WeatherLoadingError() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun WeatherDetail(
     weather: OWMApiAnswer,
+    forecast: OWMForecastApiAnswer,
     onScaffoldIconClick: () -> Unit,
 ) {
     WeatherScaffold(
@@ -265,7 +299,54 @@ private fun WeatherDetail(
         onIconClick = onScaffoldIconClick,
         icon = Icons.Default.Search,
     ) {
-        City(weather)
+        Column(
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            City(weather)
+            Forecast(forecast)
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@SuppressLint("SimpleDateFormat")
+@Suppress("ktlint:standard:function-naming")
+@Composable
+private fun Forecast(forecast: OWMForecastApiAnswer) {
+    val format = SimpleDateFormat("hh:mm a")
+    format.timeZone = TimeZone.getDefault()
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        for (i in 0..<7) {
+            val item = forecast.list[i]
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.onPrimary)
+                        .padding(
+                            PADDING,
+                        ),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = format.format(item.dt!! * 1000), style = Typography.bodyMedium)
+                AsyncImage(
+                    model = "https://openweathermap.org/img/w/${item.weather[0].icon}.png",
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                )
+                Text(text = "${item.main?.temp?.roundToInt()}°C", style = Typography.bodyLarge)
+            }
+        }
     }
 }
 
@@ -274,7 +355,10 @@ private fun WeatherDetail(
 private fun Loading() {
     val animation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading))
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -290,15 +374,12 @@ private fun Loading() {
 @Composable
 private fun City(data: OWMApiAnswer) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.3f),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.Center,
     ) {
         Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .weight(0.5f),
+            modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -318,6 +399,5 @@ private fun City(data: OWMApiAnswer) {
                 }
             }
         }
-        Column(modifier = Modifier.weight(0.5f)) {}
     }
 }

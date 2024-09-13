@@ -4,9 +4,11 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.location.Location
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.flow.MutableStateFlow
+import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -16,16 +18,39 @@ import ru.glindaquint.weatherapp.R
 import ru.glindaquint.weatherapp.screens.home.UIState
 import ru.glindaquint.weatherapp.services.openWeatherMap.OpenWeatherMapService
 import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMApiAnswer
+import ru.glindaquint.weatherapp.services.openWeatherMap.api.OWMForecastApiAnswer
 import ru.glindaquint.weatherapp.viewModels.api.IWeatherViewModel
 
 class WeatherViewModel(
     application: Application,
 ) : AndroidViewModel(application),
     IWeatherViewModel {
+    private class WeatherCallBack<T>(
+        val onSuccess: ((response: Response<T>) -> Unit)?,
+        val onFailure: (() -> Unit)?,
+    ) : Callback<T> {
+        override fun onResponse(
+            call: Call<T>,
+            response: Response<T>,
+        ) {
+            onSuccess?.invoke(response)
+        }
+
+        override fun onFailure(
+            call: Call<T>,
+            t: Throwable,
+        ) {
+            Log.e("NETWORK ERROR", "${t.message}")
+            onFailure?.invoke()
+        }
+    }
+
+    private val client = OkHttpClient()
     private val retrofit =
         Retrofit
             .Builder()
             .baseUrl("https://ru.api.openweathermap.org/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     private val service = retrofit.create(OpenWeatherMapService::class.java)
@@ -40,6 +65,7 @@ class WeatherViewModel(
 
     val uiState = MutableStateFlow(UIState.WeatherLoading)
     val currentWeather = MutableLiveData<OWMApiAnswer?>()
+    val currentWeatherForecast = MutableLiveData<OWMForecastApiAnswer?>()
 
     @Suppress("ktlint:standard:backing-property-naming")
     private var _shouldShowPermissionsRequire =
@@ -56,55 +82,68 @@ class WeatherViewModel(
             _shouldShowPermissionsRequire = value
         }
 
-    override fun getWeatherByCity(cityName: String): MutableLiveData<OWMApiAnswer?> {
-        val call = service.getWeatherByCity(cityName, apiKey)
-        call.enqueue(
-            object : Callback<OWMApiAnswer> {
-                override fun onResponse(
-                    call: Call<OWMApiAnswer>,
-                    response: Response<OWMApiAnswer>,
-                ) {
-                    uiState.value = UIState.WeatherLoaded
-                    currentWeather.value = response.body()
-                }
-
-                override fun onFailure(
-                    call: Call<OWMApiAnswer>,
-                    t: Throwable,
-                ) {
-                    uiState.value = UIState.WeatherLoadingError
-                }
-            },
+    override fun getWeatherByCity(cityName: String) {
+        uiState.value = UIState.WeatherLoading
+        val weatherCall =
+            service.getWeatherByCity(
+                cityName = cityName,
+                apiKey = apiKey,
+            )
+        val forecastCall =
+            service.getForecastByCityName(
+                name = cityName,
+                apiKey = apiKey,
+            )
+        weatherCall.enqueue(
+            WeatherCallBack<OWMApiAnswer>(onFailure = {
+                client.dispatcher.cancelAll()
+                uiState.value = UIState.WeatherLoadingError
+            }, onSuccess = { weather ->
+                forecastCall.enqueue(
+                    WeatherCallBack<OWMForecastApiAnswer>(onSuccess = { forecast ->
+                        currentWeatherForecast.value = forecast.body()
+                        currentWeather.value = weather.body()
+                        uiState.value = UIState.WeatherLoaded
+                    }, onFailure = {
+                        client.dispatcher.cancelAll()
+                        uiState.value = UIState.WeatherLoadingError
+                    }),
+                )
+            }),
         )
-        return currentWeather
     }
 
-    override fun getWeatherByLocation(location: Location): MutableLiveData<OWMApiAnswer?> {
-        val call =
+    override fun getWeatherByLocation(location: Location) {
+        uiState.value = UIState.WeatherLoading
+        val weatherCall =
             service.getWeatherByLocation(
                 lat = location.latitude,
                 lon = location.longitude,
                 apiKey = apiKey,
             )
-        call.enqueue(
-            object : Callback<OWMApiAnswer> {
-                override fun onResponse(
-                    call: Call<OWMApiAnswer>,
-                    response: Response<OWMApiAnswer>,
-                ) {
-                    uiState.value = UIState.WeatherLoaded
-                    currentWeather.value = response.body()
-                }
-
-                override fun onFailure(
-                    call: Call<OWMApiAnswer>,
-                    t: Throwable,
-                ) {
-                    uiState.value = UIState.WeatherLoadingError
-                }
-            },
+        val forecastCall =
+            service.getForecastByLocation(
+                lat = location.latitude,
+                lon = location.longitude,
+                apiKey = apiKey,
+            )
+        forecastCall.enqueue(
+            WeatherCallBack<OWMForecastApiAnswer>(onSuccess = { forecast ->
+                weatherCall.enqueue(
+                    WeatherCallBack<OWMApiAnswer>(onFailure = {
+                        client.dispatcher.cancelAll()
+                        uiState.value = UIState.WeatherLoadingError
+                    }, onSuccess = { weather ->
+                        currentWeatherForecast.value = forecast.body()
+                        currentWeather.value = weather.body()
+                        uiState.value = UIState.WeatherLoaded
+                    }),
+                )
+            }, onFailure = {
+                client.dispatcher.cancelAll()
+                uiState.value = UIState.WeatherLoadingError
+            }),
         )
-        return currentWeather
     }
 
     companion object {
