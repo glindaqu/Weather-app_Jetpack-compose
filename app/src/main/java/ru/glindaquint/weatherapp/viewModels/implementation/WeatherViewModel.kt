@@ -33,7 +33,12 @@ class WeatherViewModel(
             call: Call<T>,
             response: Response<T>,
         ) {
-            onSuccess?.invoke(response)
+            if (response.body() != null) {
+                onSuccess?.invoke(response)
+            } else {
+                Log.e("SERVER ERROR", "Server has sent null")
+                onFailure?.invoke()
+            }
         }
 
         override fun onFailure(
