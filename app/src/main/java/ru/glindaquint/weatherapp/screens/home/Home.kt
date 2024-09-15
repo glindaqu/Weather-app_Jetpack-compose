@@ -345,7 +345,7 @@ private fun Forecast(forecast: OWMForecastApiAnswer) {
             WeatherForecastRow(model = it)
         }
         Text(text = "Завтра", modifier = Modifier.fillMaxWidth().padding(PADDING))
-        for (i in 0..<8 - forecastForToday.size) {
+        for (i in 0..<9 - forecastForToday.size) {
             WeatherForecastRow(model = forecastForTomorrow[i])
         }
     }
