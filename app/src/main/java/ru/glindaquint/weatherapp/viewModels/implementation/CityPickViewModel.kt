@@ -1,6 +1,7 @@
 package ru.glindaquint.weatherapp.viewModels.implementation
 
 import android.app.Application
+import android.content.Context
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
@@ -30,13 +31,24 @@ class CityPickViewModel(
     private val service = retrofit.create(OpenWeatherMapService::class.java)
     private val apiKey = application.resources.getString(R.string.open_weather_key)
 
+    private val sharedPrefs =
+        application.applicationContext.getSharedPreferences(
+            application.packageName,
+            Context.MODE_PRIVATE,
+        )
+
     val cities = MutableLiveData<List<OWMGeoApiAnswer>?>(null)
 
     val context = WeakReference(application.applicationContext)
 
     init {
         viewModelScope.launch {
-            this@CityPickViewModel.findCitiesByName(apiKey = apiKey, cityName = "Уфа")
+            this@CityPickViewModel.findCitiesByName(
+                apiKey = apiKey,
+                cityName =
+                    sharedPrefs.getString("LAST_LOCATION", WeatherViewModel.DEFAULT_CITY)
+                        ?: WeatherViewModel.DEFAULT_CITY,
+            )
         }
     }
 

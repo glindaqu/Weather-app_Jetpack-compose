@@ -82,12 +82,28 @@ class WeatherViewModel(
         @SuppressLint("CommitPrefEdits")
         set(value) {
             if (_shouldShowPermissionsRequire != value) {
-                sharedPrefs.edit().putBoolean("SHOULD_SHOW_LOCALE_PERMISSION", value)
+                sharedPrefs.edit().putBoolean("SHOULD_SHOW_LOCALE_PERMISSION", value).apply()
             }
             _shouldShowPermissionsRequire = value
         }
 
+    @Suppress("ktlint:standard:backing-property-naming")
+    private var _lastLocatedCity =
+        sharedPrefs.getString("LAST_LOCATION", DEFAULT_CITY)
+
+    var lastLocatedCity: String
+        get() = _lastLocatedCity.toString()
+
+        @SuppressLint("CommitPrefEdits")
+        set(value) {
+            if (value != lastLocatedCity) {
+                sharedPrefs.edit().putString("LAST_LOCATION", value).apply()
+                _lastLocatedCity = value
+            }
+        }
+
     override fun getWeatherByCity(cityName: String) {
+        lastLocatedCity = cityName
         uiState.value = UIState.WeatherLoading
         val weatherCall =
             service.getWeatherByCity(

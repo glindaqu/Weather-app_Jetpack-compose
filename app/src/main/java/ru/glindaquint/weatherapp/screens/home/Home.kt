@@ -3,7 +3,6 @@ package ru.glindaquint.weatherapp.screens.home
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.icu.text.SimpleDateFormat
-import android.icu.util.TimeZone
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -71,6 +71,7 @@ import ru.glindaquint.weatherapp.ui.components.WeatherScaffold
 import ru.glindaquint.weatherapp.ui.theme.Typography
 import ru.glindaquint.weatherapp.viewModels.implementation.CityPickViewModel
 import ru.glindaquint.weatherapp.viewModels.implementation.WeatherViewModel
+import java.util.Date
 import kotlin.math.roundToInt
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -128,7 +129,7 @@ fun Home() {
                 if (weatherViewModel.shouldShowPermissionsRequire) {
                     launcherForActivityResult.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
                 } else {
-                    weatherViewModel.getWeatherByCity(WeatherViewModel.DEFAULT_CITY)
+                    weatherViewModel.getWeatherByCity(weatherViewModel.lastLocatedCity)
                 }
             }
         }
@@ -323,12 +324,10 @@ private fun WeatherDetail(
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-@SuppressLint("SimpleDateFormat")
+@SuppressLint("SimpleDateFormat", "DefaultLocale")
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun Forecast(forecast: OWMForecastApiAnswer) {
-    val format = SimpleDateFormat("hh:mm a")
-    format.timeZone = TimeZone.getDefault()
     Column(
         modifier =
             Modifier
@@ -338,27 +337,55 @@ private fun Forecast(forecast: OWMForecastApiAnswer) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        for (i in 0..<7) {
-            val item = forecast.list[i]
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.secondary)
-                        .padding(
-                            PADDING,
-                        ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(text = format.format(item.dt!! * 1000), style = Typography.bodyMedium)
-                AsyncImage(
-                    model = "https://openweathermap.org/img/w/${item.weather[0].icon}.png",
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                )
-                Text(text = "${item.main?.temp?.roundToInt()}°C", style = Typography.bodyLarge)
-            }
+        val forecastForToday = forecast.list.filter { Date(it.dt!! * 1000).date == Date().date }
+        val forecastForTomorrow =
+            forecast.list.filter { Date(it.dt!! * 1000).date == Date().date + 1 }
+        Text(text = "Сегодня", modifier = Modifier.fillMaxWidth().padding(PADDING))
+        forecastForToday.forEach {
+            WeatherForecastRow(model = it)
+        }
+        Text(text = "Завтра", modifier = Modifier.fillMaxWidth().padding(PADDING))
+        for (i in 0..<8 - forecastForToday.size) {
+            WeatherForecastRow(model = forecastForTomorrow[i])
+        }
+    }
+}
+
+@SuppressLint("DefaultLocale")
+@Suppress("ktlint:standard:function-naming")
+@Composable
+private fun WeatherForecastRow(
+    model: ru.glindaquint.weatherapp.services.openWeatherMap.types.List,
+    @SuppressLint("SimpleDateFormat") format: SimpleDateFormat = SimpleDateFormat("HH:mm"),
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.secondary)
+                .padding(
+                    PADDING,
+                ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        val dateStamp = model.dt!! * 1000
+        Text(
+            text = format.format(dateStamp),
+            style = Typography.bodyMedium,
+            modifier = Modifier.fillMaxWidth(0.4f),
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.wrapContentSize()) {
+            AsyncImage(
+                model = "https://openweathermap.org/img/w/${model.weather[0].icon}.png",
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth(0.3f).size(40.dp),
+            )
+            Text(
+                text = "${String.format("%3d", model.main?.temp?.roundToInt())}°C",
+                style = Typography.bodyLarge,
+                modifier = Modifier.fillMaxWidth(0.3f),
+            )
         }
     }
 }
