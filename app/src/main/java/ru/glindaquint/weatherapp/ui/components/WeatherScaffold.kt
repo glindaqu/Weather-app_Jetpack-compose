@@ -34,7 +34,7 @@ fun WeatherScaffold(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.onBackground),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
                 actions = {
                     IconButton(onClick = onIconClick) {
                         Icon(

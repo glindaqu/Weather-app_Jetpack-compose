@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -96,7 +98,9 @@ fun Home() {
             weatherViewModel.shouldShowPermissionsRequire = false
             if (isGranted) {
                 fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                    weatherViewModel.getWeatherByLocation(location)
+                    if (location != null) {
+                        weatherViewModel.getWeatherByLocation(location)
+                    }
                 }
             } else {
                 weatherViewModel.getWeatherByCity(WeatherViewModel.DEFAULT_CITY)
@@ -193,16 +197,14 @@ private fun SearchCity(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            CitySearchField(onInput = {
-                cityPickViewModel.refreshCities(it)
-            })
+            CitySearchField(onInput = { cityPickViewModel.refreshCities(it) })
             Spacer(modifier = Modifier.weight(0.01f))
             LazyColumn(
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .weight(0.9f),
-                verticalArrangement = Arrangement.spacedBy(0.5.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 items(cities ?: listOf()) {
                     CityItem(
@@ -231,13 +233,16 @@ private fun CityItem(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.onPrimary)
-                .clickable { onClick(name, country, state) },
+                .background(MaterialTheme.colorScheme.secondary)
+                .clickable { onClick(name, country, state) }
+                .padding(PADDING)
+                .heightIn(min = 40.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = "$name ($country, $state)",
             style = Typography.bodyLarge,
-            modifier = Modifier.padding(PADDING),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -255,6 +260,14 @@ private fun CitySearchField(onInput: (String) -> Unit) {
                 .padding(PADDING),
         trailingIcon = {
             Icon(imageVector = Icons.Default.Search, contentDescription = null)
+        },
+        colors =
+            TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.onPrimary,
+                unfocusedContainerColor = MaterialTheme.colorScheme.onPrimary,
+            ),
+        placeholder = {
+            Text(text = "Название города", style = Typography.bodyLarge)
         },
     )
     LaunchedEffect(key1 = textFieldState, block = {
@@ -301,7 +314,7 @@ private fun WeatherDetail(
     ) {
         Column(
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         ) {
             City(weather)
             Forecast(forecast)
@@ -331,7 +344,7 @@ private fun Forecast(forecast: OWMForecastApiAnswer) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.onPrimary)
+                        .background(MaterialTheme.colorScheme.secondary)
                         .padding(
                             PADDING,
                         ),
