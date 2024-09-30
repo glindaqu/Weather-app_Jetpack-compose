@@ -3,6 +3,8 @@
 # Descriptions
 This is just small training application. General purpose of this project is know how works retrofit, how get data from the remote server and handle result on client side. In this task been developed android application (android-target only), that's can display weather in 24 hours, detects user location and pick location manually.
 
+Now, the api key ends and application may become unstable :(
+
 # General topics
 * Jetpack compose
 * MVVM (AndroidViewModel)
