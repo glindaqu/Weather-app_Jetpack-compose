@@ -5,6 +5,8 @@ This is just small training application. General purpose of this project is know
 
 Now, the api key ends and application may become unstable :(
 
+Also, now i see the ways to optimize this application, soo developing can be continued soon
+
 # General topics
 * Jetpack compose
 * MVVM (AndroidViewModel)
